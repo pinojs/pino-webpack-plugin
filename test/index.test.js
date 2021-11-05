@@ -1,6 +1,7 @@
 'use strict'
 
-const { rmSync, rmdirSync, readFileSync, readdirSync } = require('fs')
+const { spawnSync } = require('child_process')
+const { readFileSync, readdirSync } = require('fs')
 const { resolve } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
@@ -12,11 +13,7 @@ test('it should correctly generated all required pino files', (t) => {
   const distFolder = resolve(__dirname, '../tmp/dist')
 
   t.teardown(() => {
-    if (typeof rmSync === 'function') {
-      rmSync(distFolder, { recursive: true, force: true })
-    } else {
-      rmdirSync(distFolder, { require: true })
-    }
+    spawnSync(`rm -rf ${distFolder}`)
   })
 
   webpack(
