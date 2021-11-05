@@ -1,0 +1,1 @@
+# pino-webpack-plugin
