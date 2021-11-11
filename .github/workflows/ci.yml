@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Run Tests
-        run: npm run ci
+        run: npm run ci && npm run ci
 
   automerge:
     needs: build
