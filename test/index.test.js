@@ -29,6 +29,13 @@ test('it should correctly generated all required pino files', (t) => {
         path: distFolder,
         filename: '[name]-[contenthash].js'
       },
+      cache: {
+        name: 'test',
+        type: 'filesystem',
+        buildDependencies: {
+          config: [__filename]
+        }
+      },
       plugins: [new PinoWebpackPlugin({ transports: ['pino-pretty'] })],
       optimization: {
         minimize: false
