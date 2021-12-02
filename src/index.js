@@ -29,9 +29,10 @@ class PinoWebpackPlugin {
       const generatedPaths = {}
       const workers = {}
 
-      this.getGeneratedPathsCache(compiler, value => {
-        Object.assign(generatedPaths, value);
-      });
+      // TODO error checking
+      this.getGeneratedPathsCache(compiler, (value) => {
+        Object.assign(generatedPaths, value)
+      })
 
       // When requiring pino, thread-stream or users transports, prepare some required files for external bundling.
       compilation.hooks.buildModule.tap('PinoWebpackPlugin', this.trackInclusions.bind(this, workers))
@@ -67,7 +68,7 @@ class PinoWebpackPlugin {
               generatedPaths[id] = this.getGeneratedFile(stats.compilation, id)
             }
 
-            this.storeGeneratedPathsCache(compiler, generatedPaths, callback);
+            this.storeGeneratedPathsCache(compiler, generatedPaths, callback)
           })
         }
       )
@@ -83,39 +84,33 @@ class PinoWebpackPlugin {
   }
 
   getGeneratedPathsCache(compiler, callback) {
-    if (
-      compiler.cache &&
-      typeof compiler.cache.get === "function"
-    ) {
+    if (compiler.cache && typeof compiler.cache.get === 'function') {
       // reference for cache https://github.com/webpack/webpack/blob/dc70535ef859e517e8659f87ca37f33261ad9092/lib/Cache.js
-      const cache = compiler.getCache("pino-webpack-plugin");
+      const cache = compiler.getCache('pino-webpack-plugin')
 
-      const identifier = `pino-worker-plugin`;
-      // TODO find a better invalidation system for this cache
-      const etag = require('pino/package.json').version;
+      const identifier = `pino-worker-plugin`
+      // TODO It's ok to use the pino version as etag seed?
+      const etag = require('pino/package.json').version
 
       cache.get(identifier, etag, (err, data) => {
         // TODO check how the errors works
         if (!err) {
-          callback(data);
+          callback(data)
         }
-      });
+      })
     }
   }
 
   storeGeneratedPathsCache(compiler, generatedPaths, callback) {
-    if (
-      compiler.cache &&
-      typeof compiler.cache.get === "function"
-    ) {
-      const cache = compiler.getCache("pino-webpack-plugin");
+    if (compiler.cache && typeof compiler.cache.get === 'function') {
+      const cache = compiler.getCache('pino-webpack-plugin')
 
-      const identifier = `pino-worker-plugin`;
-      const etag = require('pino/package.json').version;
+      const identifier = `pino-worker-plugin`
+      const etag = require('pino/package.json').version
 
-      cache.store(identifier, etag, generatedPaths, callback);
+      cache.store(identifier, etag, generatedPaths, callback)
     } else {
-      callback();
+      callback()
     }
   }
 
