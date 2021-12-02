@@ -13,7 +13,9 @@ test('it should correctly generated all required pino files', (t) => {
   const distFolder = resolve(__dirname, '../tmp/dist')
 
   t.teardown(() => {
-    spawnSync(`rm -rf ${distFolder}`)
+    spawnSync(`rm -rf ${distFolder}`, {
+      shell: true
+    })
   })
 
   webpack(
