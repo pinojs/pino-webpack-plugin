@@ -38,8 +38,8 @@ function runBuild(distFolder, onDone) {
   )
 }
 
-test('it should correctly generated all required pino files', (t) => {
-  t.plan(6)
+test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
+  t.plan(7)
 
   const distFolder = resolve(__dirname, '../tmp/cached-build')
 
@@ -49,7 +49,9 @@ test('it should correctly generated all required pino files', (t) => {
     })
   })
 
-  runBuild(distFolder, () => {
+  runBuild(distFolder, (err) => {
+    t.error(err)
+
     runBuild(distFolder, (err, stats) => {
       t.error(err)
       t.notOk(stats.hasErrors())

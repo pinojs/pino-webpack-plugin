@@ -89,6 +89,7 @@ class PinoWebpackPlugin {
       // caused by the fact that the Webpack Cache is enabled
       // we are not invalidating cache because we are only filling what's missing
       cache.get(CACHE_ID, CACHE_ID, (err, data = {}) => {
+        /* c8 ignore next 3 */
         if (err) {
           return callback(err)
         }
