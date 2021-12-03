@@ -18,7 +18,7 @@ const footer = `
 ; if(typeof module !== 'undefined' && typeof __webpack_exports__ !== "undefined") { module.exports = __webpack_exports__; }
 `
 
-const CACHE_ID = `pino-worker-plugin`
+const CACHE_ID = 'pino-worker-plugin'
 
 class PinoWebpackPlugin {
   constructor(options) {

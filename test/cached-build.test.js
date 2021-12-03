@@ -5,7 +5,7 @@ const { readFileSync, readdirSync } = require('fs')
 const { resolve, join } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
-const { banner, footer, PinoWebpackPlugin } = require('../src/index')
+const { banner, PinoWebpackPlugin } = require('../src/index')
 
 function runBuild(distFolder, onDone) {
   webpack(
