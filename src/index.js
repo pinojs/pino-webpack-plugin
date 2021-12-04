@@ -18,6 +18,8 @@ const footer = `
 ; if(typeof module !== 'undefined' && typeof __webpack_exports__ !== "undefined") { module.exports = __webpack_exports__; }
 `
 
+const CACHE_ID = 'pino-worker-plugin'
+
 class PinoWebpackPlugin {
   constructor(options) {
     options = { transports: [], ...options }
@@ -63,7 +65,7 @@ class PinoWebpackPlugin {
               generatedPaths[id] = this.getGeneratedFile(stats.compilation, id)
             }
 
-            callback()
+            this.handleCache(compiler, generatedPaths, callback)
           })
         }
       )
@@ -75,6 +77,29 @@ class PinoWebpackPlugin {
         },
         this.addExternalFilesBanner.bind(this, generatedPaths)
       )
+    })
+  }
+
+  handleCache(compiler, generatedPaths, callback) {
+    // reference for cache https://github.com/webpack/webpack/blob/dc70535ef859e517e8659f87ca37f33261ad9092/lib/Cache.js
+    const cache = compiler.getCache(CACHE_ID)
+
+    // With this trick we are filling the missing entries to the generatedPaths
+    // caused by the fact that the Webpack Cache is enabled
+    // we are not invalidating cache because we are only filling what's missing
+    cache.get(CACHE_ID, CACHE_ID, (err, data = {}) => {
+      /* c8 ignore next 3 */
+      if (err) {
+        return callback(err)
+      }
+
+      for (const [id, fileName] of Object.entries(data)) {
+        if (!generatedPaths[id]) {
+          generatedPaths[id] = fileName
+        }
+      }
+
+      cache.store(CACHE_ID, CACHE_ID, generatedPaths, callback)
     })
   }
 
