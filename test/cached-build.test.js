@@ -11,7 +11,7 @@ function runBuild(distFolder, onDone) {
   webpack(
     {
       context: resolve(__dirname, 'fixtures'),
-      mode: 'production',
+      mode: 'development',
       target: 'node',
       entry: {
         first: './first.js',
