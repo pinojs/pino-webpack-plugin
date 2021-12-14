@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Restore cached dependencies
-        uses: actions/cache@v2.1.6
+        uses: actions/cache@v2
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package.json') }}
@@ -27,8 +27,10 @@ jobs:
   automerge:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write    
     steps:
-      - uses: fastify/github-action-merge-dependabot@v3.0.2
-        if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+      - uses: fastify/github-action-merge-dependabot@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
