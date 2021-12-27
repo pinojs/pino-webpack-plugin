@@ -6,9 +6,10 @@ const { resolve } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
+const execa = require('execa')
 
 test('it should correctly generated all required pino files', (t) => {
-  t.plan(18)
+  t.plan(20)
 
   const distFolder = resolve(__dirname, '../tmp/dist')
 
@@ -36,7 +37,7 @@ test('it should correctly generated all required pino files', (t) => {
         minimize: false
       }
     },
-    (err, stats) => {
+    async (err, stats) => {
       t.error(err)
       t.notOk(stats.hasErrors())
 
@@ -75,10 +76,20 @@ test('it should correctly generated all required pino files', (t) => {
         )
       )
 
+      const { stdout: firstStdout } = await execa(process.argv[0], [resolve(distFolder, firstFile)])
+
+      t.match(firstStdout, /This is first!/)
+
+      const secondDistFilePath = resolve(distFolder, `abc/cde/${secondFile}`)
+
       // Check that the root file starts with the banner and has the right path to pino-file
-      const secondContent = readFileSync(resolve(distFolder, `abc/cde/${secondFile}`), 'utf-8')
+      const secondContent = readFileSync(secondDistFilePath, 'utf-8')
       t.ok(secondContent.startsWith(banner))
       t.ok(secondContent.includes(`'pino-pretty': pinoWebpackAbsolutePath('../../${pinoPretty}')`))
+
+      const { stdout: secondStdout } = await execa(process.argv[0], [secondDistFilePath])
+
+      t.match(secondStdout, /This is second!/)
     }
   )
 })
