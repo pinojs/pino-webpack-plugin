@@ -36,12 +36,12 @@ test('should work in webpack development mode', (t) => {
     })
   })
 
-  runBuild(distFolder, async (err, stats) => {
+  runBuild(distFolder, (err, stats) => {
     t.error(err)
     t.notOk(stats.hasErrors())
 
-    const { stdout } = await execa(process.argv[0], [resolve(distFolder, 'main.js')])
-
-    t.match(stdout, /This is second!/)
+    execa(process.argv[0], [resolve(distFolder, 'main.js')]).then(({ stdout }) => {
+      t.match(stdout, /This is second!/)
+    })
   })
 })

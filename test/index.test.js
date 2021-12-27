@@ -37,7 +37,7 @@ test('it should correctly generated all required pino files', (t) => {
         minimize: false
       }
     },
-    async (err, stats) => {
+    (err, stats) => {
       t.error(err)
       t.notOk(stats.hasErrors())
 
@@ -76,9 +76,9 @@ test('it should correctly generated all required pino files', (t) => {
         )
       )
 
-      const { stdout: firstStdout } = await execa(process.argv[0], [resolve(distFolder, firstFile)])
-
-      t.match(firstStdout, /This is first!/)
+      execa(process.argv[0], [resolve(distFolder, firstFile)]).then(({ stdout }) => {
+        t.match(stdout, /This is first!/)
+      })
 
       const secondDistFilePath = resolve(distFolder, `abc/cde/${secondFile}`)
 
@@ -87,9 +87,9 @@ test('it should correctly generated all required pino files', (t) => {
       t.ok(secondContent.startsWith(banner))
       t.ok(secondContent.includes(`'pino-pretty': pinoWebpackAbsolutePath('../../${pinoPretty}')`))
 
-      const { stdout: secondStdout } = await execa(process.argv[0], [secondDistFilePath])
-
-      t.match(secondStdout, /This is second!/)
+      execa(process.argv[0], [resolve(secondDistFilePath)]).then(({ stdout }) => {
+        t.match(stdout, /This is second!/)
+      })
     }
   )
 })

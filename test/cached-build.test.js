@@ -53,7 +53,7 @@ test('it should correctly generate all required pino files when the cache is ena
   runBuild(distFolder, (err) => {
     t.error(err)
 
-    runBuild(distFolder, async (err, stats) => {
+    runBuild(distFolder, (err, stats) => {
       t.error(err)
       t.notOk(stats.hasErrors())
 
@@ -74,9 +74,10 @@ test('it should correctly generate all required pino files when the cache is ena
           `globalThis.__bundlerPathsOverrides = {'pino/file': pinoWebpackAbsolutePath('./${pinoFile}')`
         )
       )
-      const { stdout: firstStdout } = await execa(process.argv[0], [resolve(distFolder, firstFile)])
 
-      t.match(firstStdout, /This is first!/)
+      execa(process.argv[0], [resolve(distFolder, firstFile)]).then(({ stdout }) => {
+        t.match(stdout, /This is first!/)
+      })
 
       const secondDistFilePath = resolve(distFolder, `abc/cde/${secondFile}`)
 
@@ -85,9 +86,9 @@ test('it should correctly generate all required pino files when the cache is ena
       t.ok(secondContent.startsWith(banner))
       t.ok(secondContent.includes(`'pino-pretty': pinoWebpackAbsolutePath('../../${pinoPretty}')`))
 
-      const { stdout: secondStdout } = await execa(process.argv[0], [secondDistFilePath])
-
-      t.match(secondStdout, /This is second!/)
+      execa(process.argv[0], [secondDistFilePath]).then(({ stdout }) => {
+        t.match(stdout, /This is second!/)
+      })
     })
   })
 })
