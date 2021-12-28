@@ -1,6 +1,5 @@
 'use strict'
 
-const { spawnSync } = require('child_process')
 const { resolve } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
@@ -28,13 +27,7 @@ function runBuild(distFolder, onDone) {
 test('should work in webpack development mode', (t) => {
   t.plan(3)
 
-  const distFolder = resolve(__dirname, '../tmp/pino-transport-bug')
-
-  t.teardown(() => {
-    spawnSync(`rm -rf ${distFolder}`, {
-      shell: true
-    })
-  })
+  const distFolder = t.testdir()
 
   runBuild(distFolder, (err, stats) => {
     t.error(err)

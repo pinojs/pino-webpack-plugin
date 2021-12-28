@@ -1,6 +1,5 @@
 'use strict'
 
-const { spawnSync } = require('child_process')
 const { readFileSync, readdirSync } = require('fs')
 const { resolve, join } = require('path')
 const { test } = require('tap')
@@ -42,13 +41,7 @@ function runBuild(distFolder, onDone) {
 test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
   t.plan(9)
 
-  const distFolder = resolve(__dirname, '../tmp/cached-build')
-
-  t.teardown(() => {
-    spawnSync(`rm -rf ${distFolder}`, {
-      shell: true
-    })
-  })
+  const distFolder = t.testdir()
 
   runBuild(distFolder, (err) => {
     t.error(err)

@@ -1,6 +1,5 @@
 'use strict'
 
-const { spawnSync } = require('child_process')
 const { readFileSync, readdirSync } = require('fs')
 const { resolve } = require('path')
 const { test } = require('tap')
@@ -11,13 +10,7 @@ const execa = require('execa')
 test('it should correctly generated all required pino files', (t) => {
   t.plan(20)
 
-  const distFolder = resolve(__dirname, '../tmp/dist')
-
-  t.teardown(() => {
-    spawnSync(`rm -rf ${distFolder}`, {
-      shell: true
-    })
-  })
+  const distFolder = t.testdir()
 
   webpack(
     {
