@@ -1,11 +1,11 @@
 'use strict'
 
-const { spawnSync } = require('child_process')
 const { readFileSync, readdirSync } = require('fs')
 const { resolve, join } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
 const { banner, PinoWebpackPlugin } = require('../src/index')
+const execa = require('execa')
 
 function runBuild(distFolder, onDone) {
   webpack(
@@ -39,15 +39,9 @@ function runBuild(distFolder, onDone) {
 }
 
 test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
-  t.plan(7)
+  t.plan(9)
 
-  const distFolder = resolve(__dirname, '../tmp/cached-build')
-
-  t.teardown(() => {
-    spawnSync(`rm -rf ${distFolder}`, {
-      shell: true
-    })
-  })
+  const distFolder = t.testdir()
 
   runBuild(distFolder, (err) => {
     t.error(err)
@@ -74,10 +68,20 @@ test('it should correctly generate all required pino files when the cache is ena
         )
       )
 
+      execa(process.argv[0], [resolve(distFolder, firstFile)]).then(({ stdout }) => {
+        t.match(stdout, /This is first!/)
+      })
+
+      const secondDistFilePath = resolve(distFolder, `abc/cde/${secondFile}`)
+
       // Check that the root file starts with the banner and has the right path to pino-file
-      const secondContent = readFileSync(resolve(distFolder, `abc/cde/${secondFile}`), 'utf-8')
+      const secondContent = readFileSync(secondDistFilePath, 'utf-8')
       t.ok(secondContent.startsWith(banner))
       t.ok(secondContent.includes(`'pino-pretty': pinoWebpackAbsolutePath('../../${pinoPretty}')`))
+
+      execa(process.argv[0], [secondDistFilePath]).then(({ stdout }) => {
+        t.match(stdout, /This is second!/)
+      })
     })
   })
 })
