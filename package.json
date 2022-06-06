@@ -43,7 +43,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.1",
     "execa": "^5.0.0",
-    "pino": "^7.6.1",
+    "pino": "^8.0.0",
     "pino-pretty": "^8.0.0",
     "prettier": "^2.4.1",
     "tap": "^16.0.0"
