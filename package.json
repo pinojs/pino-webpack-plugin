@@ -19,6 +19,7 @@
     "url": "https://github.com/pinojs/pino-webpack-plugin/issues"
   },
   "main": "src/index.js",
+  "types": "src/index.d.ts",
   "files": [
     "src"
   ],
