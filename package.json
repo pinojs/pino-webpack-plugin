@@ -26,9 +26,10 @@
   "scripts": {
     "format": "prettier -w src test",
     "lint": "eslint src test",
-    "test": "c8 --reporter=text --reporter=html tap --reporter=spec --no-coverage test/*.test.js",
+    "test": "c8 --reporter=text --reporter=html tap --reporter=spec --no-coverage test/*.test.js && npm run test-types",
     "test:watch": "tap --watch --reporter=spec --no-browser --coverage-report=text --coverage-report=html test/*.test.js",
-    "test:ci": "c8 --reporter=text --reporter=json --check-coverage --branches 90 --functions 90 --lines 90 --statements 90 tap --no-color --no-coverage test/*.test.js",
+    "test:ci": "c8 --reporter=text --reporter=json --check-coverage --branches 90 --functions 90 --lines 90 --statements 90 tap --no-color --no-coverage test/*.test.js && & npm run test-types",
+    "test:types": "tsc && tsd",
     "ci": "npm run lint && npm run test:ci",
     "prepublishOnly": "npm run ci",
     "postpublish": "git push origin && git push origin -f --tags"
@@ -47,9 +48,13 @@
     "pino": "^7.6.1",
     "pino-pretty": "^8.0.0",
     "prettier": "^2.4.1",
-    "tap": "^16.0.0"
+    "tap": "^16.0.0",
+    "tsd": "^0.21.0"
   },
   "engines": {
     "node": ">= 12.13.0"
+  },
+  "tsd": {
+    "directory": "test/types"
   }
 }
