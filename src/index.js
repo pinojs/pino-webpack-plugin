@@ -1,4 +1,6 @@
 const webpack = require('webpack')
+const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
+
 const { sep } = require('path')
 
 const banner = `/* Start of pino-webpack-plugin additions */
@@ -14,7 +16,7 @@ function pinoWebpackAbsolutePath(p) {
 `
 
 const footer = `
-/* The following statement is added by pino-webpack-bundler to make sure extracted file are valid commonjs modules */
+/* The following statement is added by pino-webpack-plugin to make sure extracted file are valid commonjs modules */
 ; if(typeof module !== 'undefined' && typeof __webpack_exports__ !== "undefined") { module.exports = __webpack_exports__; }
 `
 
@@ -33,6 +35,17 @@ class PinoWebpackPlugin {
 
       // When requiring pino, thread-stream or users transports, prepare some required files for external bundling.
       compilation.hooks.buildModule.tap('PinoWebpackPlugin', this.trackInclusions.bind(this, workers))
+
+      // When requiring pino, also make sure all transports in the options are required
+      compilation.hooks.succeedModule.tap('PinoWebpackPlugin', (mod) => {
+        if (mod.rawRequest !== 'pino') {
+          return
+        }
+
+        for (const transport of this.transports) {
+          mod.dependencies.push(new CommonJsRequireDependency(transport, null))
+        }
+      })
 
       // When webpack has finished analyzing and bundling all files, compile marked external files
       compilation.hooks.processAssets.tapAsync(
@@ -196,7 +209,7 @@ class PinoWebpackPlugin {
         // Prepend the banner and the __bundlerPathsOverrides to the generated file.
         assets[path] = new webpack.sources.ConcatSource(
           banner,
-          `\nglobalThis.__bundlerPathsOverrides = {${declarations}};\n/* End of pino-webpack-bundler additions */\n\n`,
+          `\nglobalThis.__bundlerPathsOverrides = {${declarations}};\n/* End of pino-webpack-plugin additions */\n\n`,
           assets[path]
         )
       }
