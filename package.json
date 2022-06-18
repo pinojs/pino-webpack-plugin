@@ -28,7 +28,7 @@
     "lint": "eslint src test",
     "test": "c8 --reporter=text --reporter=html tap --reporter=spec --no-coverage test/*.test.js && npm run test:types",
     "test:watch": "tap --watch --reporter=spec --no-browser --coverage-report=text --coverage-report=html test/*.test.js",
-    "test:ci": "c8 --reporter=text --reporter=json --check-coverage --branches 90 --functions 90 --lines 90 --statements 90 tap --no-color --no-coverage test/*.test.js && & npm run test:types",
+    "test:ci": "c8 --reporter=text --reporter=json --check-coverage --branches 90 --functions 90 --lines 90 --statements 90 tap --no-color --no-coverage test/*.test.js && npm run test:types",
     "test:types": "tsd",
     "ci": "npm run lint && npm run test:ci",
     "prepublishOnly": "npm run ci",
