@@ -66,10 +66,9 @@ class PinoWebpackPlugin {
               this.addCompatibilityFooter.bind(this)
             )
             // Add child compilation assets to the main compilation
-            compilation.hooks.additionalAssets.tapAsync(
-              'PinoWebpackPlugin',
-              (compilation.assets = Object.assign(childCompilation.assets, compilation.assets))
-            )
+            compilation.hooks.additionalAssets.tapAsync('PinoWebpackPlugin', () => {
+              compilation.assets = Object.assign(childCompilation.assets, compilation.assets)
+            })
           })
 
           // Perform the compilation and then track each generated file relative path
