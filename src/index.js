@@ -2,7 +2,7 @@ const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
 const { createFsFromVolume, Volume } = require('memfs')
 const { sep, dirname, relative } = require('path')
-const { cache } = require('webpack')
+// const { cache } = require('webpack') // Cache handling missing
 
 const fileBanner = `/* Start of pino-webpack-plugin additions */
 function pinoWebpackAbsolutePath(p) {
@@ -21,7 +21,7 @@ const compatibilityFooter = `
 ; if(typeof module !== 'undefined' && typeof __webpack_exports__ !== "undefined") { module.exports = __webpack_exports__; }
 `
 const PLUGIN_NAME = 'PinoWebpackPlugin'
-const CACHE_ID = 'pino-worker-plugin'
+// const CACHE_ID = 'pino-worker-plugin' // Cache handling missing
 
 const fs = createFsFromVolume(new Volume())
 
@@ -61,7 +61,9 @@ class PinoWebpackPlugin {
 
       // When requiring pino, also make sure all transports in the options are required
       compilation.hooks.succeedModule.tap(PLUGIN_NAME, (mod) => {
-        if (mod.rawRequest !== 'pino') return
+        if (mod.rawRequest !== 'pino') {
+          return
+        }
 
         for (const transport of this.transports) {
           mod.dependencies.push(new CommonJsRequireDependency(transport, null))
@@ -138,7 +140,9 @@ class PinoWebpackPlugin {
 
           // Create array of declarations used in banner
           for (const depId in dependencies) {
-            if (!dependencies[depId].file) continue
+            if (!dependencies[depId].file) {
+              continue
+            }
             workerFiles.push([depId, dependencies[depId].file])
           }
 
