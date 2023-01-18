@@ -108,6 +108,7 @@ class PinoWebpackPlugin {
             (childAssets) => {
               for (const path of Object.keys(childAssets)) {
                 if (path.endsWith('.js')) {
+                  // Add generated file with compatibility footer to main compilation assets
                   compilation.emitAsset(path, new webpack.sources.ConcatSource(childAssets[path], compatibilityFooter))
                 }
               }
@@ -116,7 +117,9 @@ class PinoWebpackPlugin {
 
           // Get generated file for each dependency
           childCompilation.hooks.chunkAsset.tap(`${PLUGIN_NAME}ChildCompiler`, (chunk, file) => {
+            // Unescape pino/file
             const dependencyId = chunk.name === 'pino-file' ? 'pino/file' : chunk.name
+
             if (dependencyId && dependencies[dependencyId]) {
               dependencies[dependencyId].file = file
             }
@@ -136,25 +139,27 @@ class PinoWebpackPlugin {
           stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
         },
         () => {
-          const workerFiles = []
+          const dependenciesFiles = []
 
           // Create array of declarations used in banner
           for (const depId in dependencies) {
             if (!dependencies[depId].file) {
               continue
             }
-            workerFiles.push([depId, dependencies[depId].file])
+            dependenciesFiles.push([depId, dependencies[depId].file])
           }
 
+          // Add banner to every file generated from compilation entry points
           compilation.entrypoints.forEach((ep, k) => {
             for (const entrypointFile of ep.getFiles()) {
               const relativePath = relative(dirname(entrypointFile), '.') || '.'
+
               compilation.updateAsset(
                 entrypointFile,
                 new webpack.sources.ConcatSource(
                   fileBanner,
                   '\n',
-                  `globalThis.__bundlerPathsOverrides = {${workerFiles.map(
+                  `globalThis.__bundlerPathsOverrides = {${dependenciesFiles.map(
                     ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath('${relativePath}${sep}${file}')`
                   )}};`,
                   '\n',
