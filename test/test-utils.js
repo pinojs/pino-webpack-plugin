@@ -5,6 +5,22 @@ const { webpack } = require('webpack')
 
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
 
+// Default dependencies to estimate test plan
+const DEFAULT_DEPENDENCIES = ['pino-worker', 'pino/file', 'thread-stream-worker', 'pino-pipeline-worker']
+
+// Default webpack config, will be merged with webpackConfig parameter
+const DEFAULT_WEBPACK_CONFIG = {
+  context: resolve(__dirname, 'fixtures'),
+  mode: 'production',
+  target: 'node',
+  output: {
+    filename: '[name]-[contenthash].js'
+  },
+  optimization: {
+    minimize: false
+  }
+}
+
 function createTests(tapInstance, webpackConfig, distFolder) {
   // If no dist folder, use tap tempfolder
   distFolder ??= tapInstance.testdir()
@@ -12,22 +28,6 @@ function createTests(tapInstance, webpackConfig, distFolder) {
   // Update webpack config with distFolder
   webpackConfig.output ??= {}
   webpackConfig.output.path = distFolder
-
-  // Default webpack config, will be merged with webpackConfig parameter
-  const DEFAULT_WEBPACK_CONFIG = {
-    context: resolve(__dirname, 'fixtures'),
-    mode: 'production',
-    target: 'node',
-    output: {
-      filename: '[name]-[contenthash].js'
-    },
-    optimization: {
-      minimize: false
-    }
-  }
-
-  // Default dependencies to estimate test plan
-  const DEFAULT_DEPENDENCIES = ['pino-worker', 'pino/file', 'thread-stream-worker', 'pino-pipeline-worker']
 
   let dependenciesCount = DEFAULT_DEPENDENCIES.length
   const entryPointCount = Object.values(webpackConfig.entry).length
