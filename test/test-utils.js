@@ -58,7 +58,7 @@ function createTests(tapInstance, webpackConfig, distFolder) {
     // Output folder
     distFolder,
     // Test plan estimation
-    testPlan: planEstimation,
+    planEstimation,
 
     // Run webpack build, then test errors
     runBuild: function (callback) {
@@ -71,7 +71,7 @@ function createTests(tapInstance, webpackConfig, distFolder) {
 
     /**
      * Test if file exists, and if only one file exists starting with given pattern
-     * @return First found file relative path
+     * @return First found file relative path to distFolder
      */
     testJSFileExists: function (pattern, subFolder) {
       const folderFiles = readdirSync(resolve(distFolder, subFolder ?? '')).filter((f) => f.startsWith(pattern))

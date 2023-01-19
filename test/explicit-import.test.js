@@ -17,12 +17,12 @@ test('it should correctly generated all required pino files with explicit import
     plugins: [new PinoWebpackPlugin({ transports: ['pino-pretty'] })]
   }
 
-  const { testPlan, runBuild, testJSFileExists, testDependencyFileHasFooter, testEntrypointFile } = createTests(
+  const { planEstimation, runBuild, testJSFileExists, testDependencyFileHasFooter, testEntrypointFile } = createTests(
     t,
     webpackConfig
   )
 
-  t.plan(testPlan)
+  t.plan(planEstimation)
 
   // const distFolder = t.testdir()
 

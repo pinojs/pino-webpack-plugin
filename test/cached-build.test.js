@@ -29,13 +29,13 @@ test('it should correctly generate all required pino files when the cache is ena
     plugins: [new PinoWebpackPlugin({ transports: ['pino-pretty'] })]
   }
 
-  const { testPlan, runBuild, testJSFileExists, testDependencyFileHasFooter, testEntrypointFile } = createTests(
+  const { planEstimation, runBuild, testJSFileExists, testDependencyFileHasFooter, testEntrypointFile } = createTests(
     t,
     webpackConfig,
     distFolder
   )
 
-  t.plan(testPlan + 2)
+  t.plan(planEstimation + 2)
 
   runBuild(() => {
     console.log('Launch second build')
