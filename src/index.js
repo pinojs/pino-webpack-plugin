@@ -84,8 +84,11 @@ class PinoWebpackPlugin {
           Object.values(dependencies).map((worker) => worker.entry)
         )
         childCompiler.inputFileSystem = compiler.inputFileSystem
-        // Generate files in memory
-        // It will be written to output path by main compilation
+        // Generate files without footer in memory
+        // to be written with footer to output path by main compilation
+        // __
+        // If the child compiler would write to file system,
+        // we would have to manually handle the footer-less file deletion
         childCompiler.outputFileSystem = fs
 
         // Enable required plugins
