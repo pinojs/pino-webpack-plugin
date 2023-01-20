@@ -5,14 +5,10 @@ const { resolve } = require('path')
 const { test } = require('tap')
 const webpack = require('webpack')
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const execa = require('execa')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
-test('it should correctly generated all required pino files', (t) => {
-  t.plan(20)
-
-  const distFolder = t.testdir()
-
+function runBuild(distFolder, onDone) {
   webpack(
     {
       context: resolve(__dirname, 'fixtures'),
@@ -31,7 +27,41 @@ test('it should correctly generated all required pino files', (t) => {
         minimize: false
       }
     },
-    (err, stats) => {
+    onDone
+  )
+}
+
+test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
+  t.plan(29)
+
+  const distFolder = t.testdir()
+
+  runBuild(distFolder, (err, stats) => {
+    t.error(err)
+    t.notOk(stats.hasErrors())
+
+    // Find all files in the folder
+    const rootFiles = readdirSync(distFolder).filter((e) => e.endsWith('.js'))
+    const nestedFiles = readdirSync(resolve(distFolder, 'abc/cde')).filter((e) => e.endsWith('.js'))
+
+    const firstFile = rootFiles.find((e) => e.startsWith('first-'))
+    const secondFile = nestedFiles.find((e) => e.startsWith('second-'))
+    const threadStream = rootFiles.find((e) => e.startsWith('thread-stream-'))
+    const pinoWorker = rootFiles.find((e) => e.startsWith('pino-worker-'))
+    const pinoPipelineWorker = rootFiles.find((e) => e.startsWith('pino-pipeline-worker-'))
+    const pinoFile = rootFiles.find((e) => e.startsWith('pino-file-'))
+    const pinoPretty = rootFiles.find((e) => e.startsWith('pino-pretty-'))
+
+    // Check that all required files have been generated
+    t.ok(firstFile)
+    t.ok(secondFile)
+    t.ok(threadStream)
+    t.ok(pinoWorker)
+    t.ok(pinoPipelineWorker)
+    t.ok(pinoFile)
+    t.ok(pinoPretty)
+
+    runBuild(distFolder, (err, stats) => {
       t.error(err)
       t.notOk(stats.hasErrors())
 
@@ -84,6 +114,6 @@ test('it should correctly generated all required pino files', (t) => {
       execa(process.argv[0], [resolve(secondDistFilePath)]).then(({ stdout }) => {
         t.match(stdout, /This is second!/)
       })
-    }
-  )
+    })
+  })
 })

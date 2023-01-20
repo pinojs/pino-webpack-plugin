@@ -105,3 +105,4 @@ dist
 
 # Other temporary files
 tmp/
+.DS_Store

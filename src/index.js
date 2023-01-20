@@ -35,27 +35,28 @@ class PinoWebpackPlugin {
     compiler.hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
       const dependencies = {} // {entry: source file, file: generated file}
 
-      // When requiring pino, thread-stream or users transports, prepare some required files for external bundling.
-      compilation.hooks.buildModule.tap(PLUGIN_NAME, (mod) => {
+      compilation.hooks.finishModules.tap(PLUGIN_NAME, (modules) => {
         const addChildCompilerEntryPoint = (id, context, file, name) => {
           // Use id as name if none was given
           dependencies[id] = { entry: new webpack.EntryPlugin(context, file, { name: name ?? id }) }
         }
 
-        switch (true) {
-          case mod.rawRequest === 'thread-stream':
-            addChildCompilerEntryPoint('thread-stream-worker', mod.context, './lib/worker.js')
-            break
+        for (const mod of modules) {
+          switch (true) {
+            case mod.rawRequest === 'thread-stream':
+              addChildCompilerEntryPoint('thread-stream-worker', mod.context, './lib/worker.js')
+              break
 
-          case mod.rawRequest === 'pino':
-            addChildCompilerEntryPoint('pino/file', mod.context, './file.js', 'pino-file')
-            addChildCompilerEntryPoint('pino-worker', mod.context, './lib/worker.js')
-            addChildCompilerEntryPoint('pino-pipeline-worker', mod.context, './lib/worker-pipeline.js')
-            break
+            case mod.rawRequest === 'pino':
+              addChildCompilerEntryPoint('pino/file', mod.context, './file.js', 'pino-file')
+              addChildCompilerEntryPoint('pino-worker', mod.context, './lib/worker.js')
+              addChildCompilerEntryPoint('pino-pipeline-worker', mod.context, './lib/worker-pipeline.js')
+              break
 
-          case this.transports.includes(mod.rawRequest):
-            addChildCompilerEntryPoint(mod.rawRequest, mod.context, mod.request)
-            break
+            case this.transports.includes(mod.rawRequest):
+              addChildCompilerEntryPoint(mod.rawRequest, mod.context, mod.request)
+              break
+          }
         }
       })
 
@@ -71,7 +72,7 @@ class PinoWebpackPlugin {
       })
 
       /** Compile dependencies and add result to compilation assets **/
-      compilation.hooks.additionalAssets.tapAsync(PLUGIN_NAME, (processAssetsCallback) => {
+      compilation.hooks.additionalAssets.tapAsync(PLUGIN_NAME, (additionalAssetsCallback) => {
         // Create child compiler for dependencies
         const childCompiler = compilation.createChildCompiler(
           `${PLUGIN_NAME}ChildCompiler`,
@@ -131,7 +132,7 @@ class PinoWebpackPlugin {
 
         // Perform the dependencies compilation
         childCompiler.run((err, stats) => {
-          processAssetsCallback(err, stats)
+          additionalAssetsCallback(err, stats)
         })
       })
 
