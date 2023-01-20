@@ -23,10 +23,10 @@ const DEFAULT_WEBPACK_CONFIG = {
 
 function createTests(tapInstance, webpackConfig, distFolder) {
   // If no dist folder, use tap tempfolder
-  distFolder ??= tapInstance.testdir()
+  distFolder = distFolder ?? tapInstance.testdir()
 
   // Update webpack config with distFolder
-  webpackConfig.output ??= {}
+  webpackConfig.output = webpackConfig.output ?? {}
   webpackConfig.output.path = distFolder
 
   let dependenciesCount = DEFAULT_DEPENDENCIES.length
