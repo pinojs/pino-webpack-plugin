@@ -7,7 +7,7 @@ const webpack = require('webpack')
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
 const execa = require('execa')
 
-test('it should correctly generated all required pino files', (t) => {
+test('it should correctly generated all required pino files when using explicit import', (t) => {
   t.plan(16)
 
   const distFolder = t.testdir()
