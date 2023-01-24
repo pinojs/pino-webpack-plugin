@@ -1,9 +1,10 @@
 const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
+const { createFsFromVolume, Volume } = require('memfs')
+const { sep, dirname, relative } = require('path')
+// const { cache } = require('webpack') // Cache handling missing
 
-const { sep } = require('path')
-
-const banner = `/* Start of pino-webpack-plugin additions */
+const fileBanner = `/* Start of pino-webpack-plugin additions */
 function pinoWebpackAbsolutePath(p) {
   try {
     return require('path').join(__dirname, p)
@@ -15,12 +16,14 @@ function pinoWebpackAbsolutePath(p) {
 }
 `
 
-const footer = `
+const compatibilityFooter = `
 /* The following statement is added by pino-webpack-plugin to make sure extracted file are valid commonjs modules */
 ; if(typeof module !== 'undefined' && typeof __webpack_exports__ !== "undefined") { module.exports = __webpack_exports__; }
 `
+const PLUGIN_NAME = 'PinoWebpackPlugin'
+// const CACHE_ID = 'pino-worker-plugin' // Cache handling missing
 
-const CACHE_ID = 'pino-worker-plugin'
+const fs = createFsFromVolume(new Volume())
 
 class PinoWebpackPlugin {
   constructor(options) {
@@ -29,15 +32,36 @@ class PinoWebpackPlugin {
   }
 
   apply(compiler) {
-    compiler.hooks.thisCompilation.tap('PinoWebpackPlugin', (compilation) => {
-      const generatedPaths = {}
-      const workers = {}
+    compiler.hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
+      const dependencies = {} // {entry: source file, file: generated file}
 
-      // When requiring pino, thread-stream or users transports, prepare some required files for external bundling.
-      compilation.hooks.buildModule.tap('PinoWebpackPlugin', this.trackInclusions.bind(this, workers))
+      compilation.hooks.finishModules.tap(PLUGIN_NAME, (modules) => {
+        const addChildCompilerEntryPoint = (id, context, file, name) => {
+          // Use id as name if none was given
+          dependencies[id] = { entry: new webpack.EntryPlugin(context, file, { name: name ?? id }) }
+        }
+
+        for (const mod of modules) {
+          switch (true) {
+            case mod.rawRequest === 'thread-stream':
+              addChildCompilerEntryPoint('thread-stream-worker', mod.context, './lib/worker.js')
+              break
+
+            case mod.rawRequest === 'pino':
+              addChildCompilerEntryPoint('pino/file', mod.context, './file.js', 'pino-file')
+              addChildCompilerEntryPoint('pino-worker', mod.context, './lib/worker.js')
+              addChildCompilerEntryPoint('pino-pipeline-worker', mod.context, './lib/worker-pipeline.js')
+              break
+
+            case this.transports.includes(mod.rawRequest):
+              addChildCompilerEntryPoint(mod.rawRequest, mod.context, mod.request)
+              break
+          }
+        }
+      })
 
       // When requiring pino, also make sure all transports in the options are required
-      compilation.hooks.succeedModule.tap('PinoWebpackPlugin', (mod) => {
+      compilation.hooks.succeedModule.tap(PLUGIN_NAME, (mod) => {
         if (mod.rawRequest !== 'pino') {
           return
         }
@@ -47,190 +71,117 @@ class PinoWebpackPlugin {
         }
       })
 
-      // When webpack has finished analyzing and bundling all files, compile marked external files
-      compilation.hooks.processAssets.tapAsync(
-        {
-          name: 'PinoWebpackPlugin',
-          stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL
-        },
-        (assets, callback) => {
-          const childCompiler = this.createChildCompiler(compiler, compilation, workers)
-
-          // When the files have been compiled, add a compatibility footer
-          childCompiler.hooks.thisCompilation.tap('PinoWebpackPlugin', (childCompilation) => {
-            childCompilation.hooks.processAssets.tapAsync(
-              {
-                name: 'PinoWebpackPlugin',
-                stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL
-              },
-              this.addCompatibilityFooter.bind(this)
-            )
-          })
-
-          // Perform the compilation and then track each generated file relative path
-          childCompiler.run((err, stats) => {
-            /* c8 ignore next 3 */
-            if (err) {
-              return callback(err)
-            }
-
-            for (const id of Object.keys(workers)) {
-              generatedPaths[id] = this.getGeneratedFile(stats.compilation, id)
-            }
-
-            this.handleCache(compiler, generatedPaths, callback)
-          })
-        }
-      )
-
-      compilation.hooks.processAssets.tapAsync(
-        {
-          name: 'PinoWebpackPlugin',
-          stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL
-        },
-        this.addExternalFilesBanner.bind(this, generatedPaths)
-      )
-    })
-  }
-
-  handleCache(compiler, generatedPaths, callback) {
-    // reference for cache https://github.com/webpack/webpack/blob/dc70535ef859e517e8659f87ca37f33261ad9092/lib/Cache.js
-    const cache = compiler.getCache(CACHE_ID)
-
-    // With this trick we are filling the missing entries to the generatedPaths
-    // caused by the fact that the Webpack Cache is enabled
-    // we are not invalidating cache because we are only filling what's missing
-    cache.get(CACHE_ID, CACHE_ID, (err, data = {}) => {
-      /* c8 ignore next 3 */
-      if (err) {
-        return callback(err)
-      }
-
-      for (const [id, fileName] of Object.entries(data)) {
-        if (!generatedPaths[id]) {
-          generatedPaths[id] = fileName
-        }
-      }
-
-      cache.store(CACHE_ID, CACHE_ID, generatedPaths, callback)
-    })
-  }
-
-  trackInclusions(workers, mod) {
-    if (mod.rawRequest === 'thread-stream') {
-      this.addExternalFile(workers, mod, 'thread-stream-worker', './lib/worker.js')
-    } else if (mod.rawRequest === 'pino') {
-      this.addExternalFile(workers, mod, 'pino/file', './file.js', 'pino-file')
-      this.addExternalFile(workers, mod, 'pino-worker', './lib/worker.js')
-      this.addExternalFile(workers, mod, 'pino-pipeline-worker', './lib/worker-pipeline.js')
-    } else if (this.transports.includes(mod.rawRequest)) {
-      workers[mod.rawRequest] = new webpack.EntryPlugin(mod.context, mod.request, {
-        name: mod.rawRequest
-      })
-    }
-  }
-
-  addExternalFile(workers, mod, id, file, name) {
-    if (!name) {
-      name = id
-    }
-
-    workers[id] = new webpack.EntryPlugin(mod.context, file, { name })
-  }
-
-  getGeneratedFile(compilation, name) {
-    if (name === 'pino/file') {
-      name = 'pino-file'
-    }
-
-    const assets = compilation.entrypoints.get(name)
-
-    /* c8 ignore next 3 */
-    if (!assets) {
-      return ''
-    }
-
-    const files = assets.getFiles() || /* c8 ignore next */ []
-
-    return files[0] || /* c8 ignore next */ ''
-  }
-
-  createChildCompiler(compiler, compilation, workers) {
-    // Create the compiler
-    const childCompiler = compilation.createChildCompiler(
-      'PinoWebpackPlugin',
-      {
-        library: {
-          type: 'commonjs2'
-        },
-        iife: false
-      },
-      Object.values(workers)
-    )
-    childCompiler.inputFileSystem = compiler.inputFileSystem
-    childCompiler.outputFileSystem = compiler.outputFileSystem
-
-    // Enable required plugins
-    new webpack.node.NodeTemplatePlugin({
-      library: {
-        type: 'commonjs2'
-      },
-      iife: false
-    }).apply(childCompiler)
-    new webpack.node.NodeTargetPlugin().apply(childCompiler)
-
-    return childCompiler
-  }
-
-  addExternalFilesBanner(generatedPaths, assets, callback) {
-    for (const path of Object.keys(assets)) {
-      if (path.endsWith('.js')) {
-        /*
-          Find how much the asset is nested:
-            * First of all we split the asset directory in the different levels
-            * Each level means is then replaced with ".." as our external files are in the root of the build folder.
-            * If no component was present, then it means the asset is root of the builder as well, so we just use ".".
-        */
-        const prefix =
-          path
-            .split(sep)
-            .slice(0, -1)
-            .map(() => '..')
-            .join(sep) || '.'
-
-        /*
-          Create the __bundlerPathsOverrides variable by mapping each generatedPath to its relative location.
-          We use a injected function to derive the absolute path at runtime.
-        */
-        const declarations = Object.entries(generatedPaths)
-          .map(([id, path]) => `'${id}': pinoWebpackAbsolutePath('${prefix}${sep}${path}')`)
-          .join(',')
-
-        // Prepend the banner and the __bundlerPathsOverrides to the generated file.
-        assets[path] = new webpack.sources.ConcatSource(
-          banner,
-          `\nglobalThis.__bundlerPathsOverrides = {${declarations}};\n/* End of pino-webpack-plugin additions */\n\n`,
-          assets[path]
+      /** Compile dependencies and add result to compilation assets **/
+      compilation.hooks.additionalAssets.tapAsync(PLUGIN_NAME, (additionalAssetsCallback) => {
+        // Create child compiler for dependencies
+        const childCompiler = compilation.createChildCompiler(
+          `${PLUGIN_NAME}ChildCompiler`,
+          {
+            library: {
+              type: 'commonjs2'
+            },
+            iife: false
+          },
+          Object.values(dependencies).map((worker) => worker.entry)
         )
-      }
-    }
+        childCompiler.inputFileSystem = compiler.inputFileSystem
+        // Generate files without footer in memory
+        // to be written with footer to output path by main compilation
+        // __
+        // If the child compiler would write to file system,
+        // we would have to manually handle the footer-less file deletion
+        childCompiler.outputFileSystem = fs
 
-    callback()
-  }
+        // Enable required plugins
+        new webpack.node.NodeTemplatePlugin({
+          library: {
+            type: 'commonjs2'
+          },
+          iife: false
+        }).apply(childCompiler)
+        new webpack.node.NodeTargetPlugin().apply(childCompiler)
 
-  addCompatibilityFooter(childAssets, childCallback) {
-    for (const path of Object.keys(childAssets)) {
-      if (path.endsWith('.js')) {
-        childAssets[path] = new webpack.sources.ConcatSource(childAssets[path], footer)
-      }
-    }
+        // When the files have been compiled, add a compatibility footer
+        childCompiler.hooks.thisCompilation.tap(PLUGIN_NAME, (childCompilation) => {
+          // Add assets with compatibility footer to main compilation
+          childCompilation.hooks.processAssets.tap(
+            {
+              name: `${PLUGIN_NAME}ChildCompiler`,
+              stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
+            },
+            (childAssets) => {
+              for (const path of Object.keys(childAssets)) {
+                if (path.endsWith('.js')) {
+                  // Add generated file with compatibility footer to main compilation assets
+                  compilation.emitAsset(path, new webpack.sources.ConcatSource(childAssets[path], compatibilityFooter))
+                }
+              }
+            }
+          )
 
-    childCallback()
+          // Get generated file for each dependency
+          childCompilation.hooks.chunkAsset.tap(`${PLUGIN_NAME}ChildCompiler`, (chunk, file) => {
+            // Unescape pino/file
+            const dependencyId = chunk.name === 'pino-file' ? 'pino/file' : chunk.name
+
+            if (dependencyId && dependencies[dependencyId]) {
+              dependencies[dependencyId].file = file
+            }
+          })
+        })
+
+        // Perform the dependencies compilation
+        childCompiler.run((err, stats) => {
+          additionalAssetsCallback(err, stats)
+        })
+      })
+
+      // Add banner to entrypoints files
+      compilation.hooks.processAssets.tap(
+        {
+          name: PLUGIN_NAME,
+          stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
+        },
+        () => {
+          const dependenciesFiles = []
+
+          // Create array of declarations used in banner
+          for (const depId in dependencies) {
+            if (!dependencies[depId].file) {
+              continue
+            }
+            dependenciesFiles.push([depId, dependencies[depId].file])
+          }
+
+          // Add banner to every file generated from compilation entry points
+          compilation.entrypoints.forEach((ep, k) => {
+            for (const entrypointFile of ep.getFiles()) {
+              const relativePath = relative(dirname(entrypointFile), '.') || '.'
+
+              compilation.updateAsset(
+                entrypointFile,
+                new webpack.sources.ConcatSource(
+                  fileBanner,
+                  '\n',
+                  `globalThis.__bundlerPathsOverrides = {${dependenciesFiles.map(
+                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath('${relativePath}${sep}${file}')`
+                  )}};`,
+                  '\n',
+                  '/* End of pino-webpack-plugin additions */',
+                  '\n\n',
+                  compilation.assets[entrypointFile]
+                )
+              )
+            }
+          })
+        }
+      )
+    })
   }
 }
 
 module.exports = {
-  banner,
-  footer,
+  banner: fileBanner,
+  footer: compatibilityFooter,
   PinoWebpackPlugin
 }
