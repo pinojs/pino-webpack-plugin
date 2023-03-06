@@ -55,7 +55,7 @@
     "pino-pretty": "^9.1.1",
     "prettier": "^2.4.1",
     "tap": "^16.0.0",
-    "tsd": "^0.25.0",
+    "tsd": "^0.26.0",
     "webpack": "^5.75.0"
   },
   "peerDependencies": {
