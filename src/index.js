@@ -157,6 +157,8 @@ class PinoWebpackPlugin {
           compilation.entrypoints.forEach((ep, k) => {
             for (const entrypointFile of ep.getFiles()) {
               const relativePath = relative(dirname(entrypointFile), '.') || '.'
+              // Fix escape character in file path separator.
+              const sepFix = '\\' === sep ? '\\\\' : sep;
 
               compilation.updateAsset(
                 entrypointFile,
@@ -164,7 +166,7 @@ class PinoWebpackPlugin {
                   fileBanner,
                   '\n',
                   `globalThis.__bundlerPathsOverrides = {${dependenciesFiles.map(
-                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath('${relativePath}${sep}${file}')`
+                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath('${relativePath}${sepFix}${file}')`
                   )}};`,
                   '\n',
                   '/* End of pino-webpack-plugin additions */',
