@@ -158,7 +158,7 @@ class PinoWebpackPlugin {
             for (const entrypointFile of ep.getFiles()) {
               const relativePath = relative(dirname(entrypointFile), '.') || '.'
               // Fix escape character in file path separator.
-              const sepFix = '\\' === sep ? '\\\\' : sep;
+              const sepFix = sep === '\\' ? '\\\\' : sep
 
               compilation.updateAsset(
                 entrypointFile,
