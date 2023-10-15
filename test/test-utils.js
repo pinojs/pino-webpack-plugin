@@ -95,14 +95,18 @@ function createTests(tapInstance, webpackConfig, distFolder) {
       const fileContent = readFileSync(resolve(distFolder, filePath), 'utf-8')
       // Test if the file starts with the expected banner
       tapInstance.ok(fileContent.startsWith(banner), `${basename(filePath)} should starts with banner`)
+      const quoteRegex = (path) => `'${path.replace(/\\/g, '\\\\\\\\')}'`
       for (const dependencyKey in dependencies) {
-        // For each dependency, test if the expeted file is in the __bundlerPathsOverrides object
+        // For each dependency, test if the expected file is in the __bundlerPathsOverrides object
         const dependencyRegexp = new RegExp(
-          `globalThis\\.__bundlerPathsOverrides = \\{.*?'${dependencyKey}': pinoWebpackAbsolutePath\\('${
-            (relative(dirname(filePath), dirname(dependencies[dependencyKey])) || '.') +
-            '/' +
-            dependencies[dependencyKey]
-          }'\\).*?\\}`
+          `globalThis\\.__bundlerPathsOverrides = \\{.*?'${dependencyKey}': pinoWebpackAbsolutePath\\(${
+            quoteRegex(
+              join(
+                relative(dirname(filePath), dirname(dependencies[dependencyKey])),
+                dependencies[dependencyKey]
+              )
+            )
+          }\\).*?\\}`
         )
         tapInstance.ok(fileContent.match(dependencyRegexp), `${dependencyKey} should have correct path in ${filePath}`)
       }

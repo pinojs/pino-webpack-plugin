@@ -1,7 +1,7 @@
 const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
 const { createFsFromVolume, Volume } = require('memfs')
-const { sep, dirname, relative } = require('path')
+const { join, dirname, relative } = require('path')
 // const { cache } = require('webpack') // Cache handling missing
 
 const fileBanner = `/* Start of pino-webpack-plugin additions */
@@ -24,6 +24,10 @@ const PLUGIN_NAME = 'PinoWebpackPlugin'
 // const CACHE_ID = 'pino-worker-plugin' // Cache handling missing
 
 const fs = createFsFromVolume(new Volume())
+
+function quote(path) {
+  return `'${path.replace(/([\\'])/g, '\\$1')}'`
+}
 
 class PinoWebpackPlugin {
   constructor(options) {
@@ -164,7 +168,7 @@ class PinoWebpackPlugin {
                   fileBanner,
                   '\n',
                   `globalThis.__bundlerPathsOverrides = {${dependenciesFiles.map(
-                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath('${relativePath}${sep}${file}')`
+                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath(${quote(join(relativePath, file))})`
                   )}};`,
                   '\n',
                   '/* End of pino-webpack-plugin additions */',
