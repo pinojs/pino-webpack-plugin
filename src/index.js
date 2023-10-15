@@ -1,7 +1,7 @@
 const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
 const { createFsFromVolume, Volume } = require('memfs')
-const { sep, dirname, relative } = require('path')
+const { dirname, relative } = require('path')
 // const { cache } = require('webpack') // Cache handling missing
 
 const fileBanner = `/* Start of pino-webpack-plugin additions */
@@ -157,6 +157,8 @@ class PinoWebpackPlugin {
           compilation.entrypoints.forEach((ep, k) => {
             for (const entrypointFile of ep.getFiles()) {
               const relativePath = relative(dirname(entrypointFile), '.') || '.'
+              // Fix escape character in file path separator.
+              const sep = '/'
 
               compilation.updateAsset(
                 entrypointFile,
