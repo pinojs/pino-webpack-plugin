@@ -3,12 +3,16 @@ name: CI
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
+        os: [ubuntu-latest, windows-latest]
+        exclude:
+          - os: windows-latest
+            node-version: 14.x
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +24,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: node-modules-${{ hashFiles('package.json') }}
+          key: node-modules-${{ matrix.os }}-${{ hashFiles('package.json') }}
       - name: Install dependencies
         run: npm install
       - name: Run Tests
