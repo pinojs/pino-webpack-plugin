@@ -104,6 +104,9 @@ class PinoWebpackPlugin {
           iife: false
         }).apply(childCompiler)
         new webpack.node.NodeTargetPlugin().apply(childCompiler)
+        new webpack.optimize.LimitChunkCountPlugin({
+          maxChunks: 1
+        }).apply(childCompiler)
 
         // When the files have been compiled, add a compatibility footer
         childCompiler.hooks.thisCompilation.tap(PLUGIN_NAME, (childCompilation) => {
