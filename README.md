@@ -1,9 +1,5 @@
 # pino-webpack-plugin
 
-[![Package Version](https://img.shields.io/npm/v/pino-webpack-plugin.svg)](https://npm.im/pino-webpack-plugin)
-[![Dependency Status](https://img.shields.io/librariesio/release/npm/pino-webpack-plugin)](https://libraries.io/npm/pino-webpack-plugin)
-[![Build](https://github.com/pinojs/pino-webpack-plugin/workflows/CI/badge.svg)](https://github.com/pinojs/pino-webpack-plugin/actions?query=workflow%3ACI)
-
 A pino plugin for webpack.
 
 ## Installation
