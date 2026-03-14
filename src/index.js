@@ -1,3 +1,5 @@
+'use strict'
+
 const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
 const { createFsFromVolume, Volume } = require('memfs')
@@ -25,17 +27,17 @@ const PLUGIN_NAME = 'PinoWebpackPlugin'
 
 const fs = createFsFromVolume(new Volume())
 
-function quote(path) {
+function quote (path) {
   return `'${path.replace(/([\\'])/g, '\\$1')}'`
 }
 
 class PinoWebpackPlugin {
-  constructor(options) {
+  constructor (options) {
     options = { transports: [], ...options }
     this.transports = options.transports
   }
 
-  apply(compiler) {
+  apply (compiler) {
     compiler.hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
       const dependencies = {} // {entry: source file, file: generated file}
 

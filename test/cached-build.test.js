@@ -1,14 +1,13 @@
 'use strict'
 
-const { test } = require('tap')
-
-const { join } = require('path')
-const { createTests } = require('./test-utils')
+const test = require('node:test')
+const { join } = require('node:path')
+const { createTests, testdir, removeDir } = require('./test-utils')
 
 const { PinoWebpackPlugin } = require('../src/index')
 
-test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
-  const distFolder = t.testdir()
+test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t, end) => {
+  const distFolder = testdir()
 
   const webpackConfig = {
     entry: {
@@ -37,8 +36,12 @@ test('it should correctly generate all required pino files when the cache is ena
 
   t.plan(planEstimation + 2)
 
+  t.after(async () => {
+    await removeDir(distFolder)
+  })
+
   runBuild(() => {
-    console.log('Launch second build')
+    t.diagnostic('Launch second build')
     runBuild(() => {
       const firstFile = testJSFileExists('first-')
       const secondFile = testJSFileExists('second-', 'abc/cde')
@@ -64,6 +67,8 @@ test('it should correctly generate all required pino files when the cache is ena
 
       testEntrypointFile(firstFile, dependencies, 'This is first')
       testEntrypointFile(secondFile, dependencies, 'This is second')
+
+      end()
     })
   })
 })
