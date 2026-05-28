@@ -1,12 +1,10 @@
 'use strict'
 
-const { test } = require('tap')
-
+const test = require('node:test')
 const { createTests } = require('./test-utils')
-
 const { PinoWebpackPlugin } = require('../src/index')
 
-test('should work in webpack development mode', (t) => {
+test('should work in webpack development mode', async (t) => {
   const webpackConfig = {
     mode: 'development',
     entry: {
@@ -19,7 +17,7 @@ test('should work in webpack development mode', (t) => {
 
   t.plan(4)
 
-  runBuild(() => {
-    testEntrypointFile('main.js', {}, 'This is second!')
+  await runBuild(async () => {
+    await testEntrypointFile('main.js', {}, 'This is second!')
   })
 })
