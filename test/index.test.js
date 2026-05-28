@@ -1,12 +1,10 @@
 'use strict'
 
-const { test } = require('tap')
-
+const test = require('node:test')
 const { createTests } = require('./test-utils')
-
 const { PinoWebpackPlugin } = require('../src/index')
 
-test('it should correctly generated all required pino files', (t) => {
+test('it should correctly generated all required pino files', async (t) => {
   const webpackConfig = {
     entry: {
       first: './first.js',
@@ -25,7 +23,7 @@ test('it should correctly generated all required pino files', (t) => {
 
   t.plan(planEstimation)
 
-  runBuild(() => {
+  await runBuild(async () => {
     const firstFile = testJSFileExists('first-')
     const secondFile = testJSFileExists('second-', 'abc/cde')
 
@@ -48,7 +46,7 @@ test('it should correctly generated all required pino files', (t) => {
       testDependencyFileHasFooter(file)
     }
 
-    testEntrypointFile(firstFile, dependencies, 'This is first')
-    testEntrypointFile(secondFile, dependencies, 'This is second')
+    await testEntrypointFile(firstFile, dependencies, 'This is first')
+    await testEntrypointFile(secondFile, dependencies, 'This is second')
   })
 })

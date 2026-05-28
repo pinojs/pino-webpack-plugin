@@ -25,17 +25,17 @@ const PLUGIN_NAME = 'PinoWebpackPlugin'
 
 const fs = createFsFromVolume(new Volume())
 
-function quote(path) {
+function quote (path) {
   return `'${path.replace(/([\\'])/g, '\\$1')}'`
 }
 
 class PinoWebpackPlugin {
-  constructor(options) {
+  constructor (options) {
     options = { transports: [], ...options }
     this.transports = options.transports
   }
 
-  apply(compiler) {
+  apply (compiler) {
     compiler.hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
       const dependencies = {} // {entry: source file, file: generated file}
 
@@ -54,7 +54,7 @@ class PinoWebpackPlugin {
             case mod.rawRequest === 'pino':
               addChildCompilerEntryPoint('pino/file', mod.context, './file.js', 'pino-file')
               addChildCompilerEntryPoint('pino-worker', mod.context, './lib/worker.js')
-              addChildCompilerEntryPoint('pino-pipeline-worker', mod.context, './lib/worker-pipeline.js')
+              addChildCompilerEntryPoint('pino-pipeline-worker', mod.context, './lib/worker.js')
               break
 
             case this.transports.includes(mod.rawRequest):

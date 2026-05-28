@@ -16,7 +16,7 @@ npm install pino-webpack-plugin
 
 ## Description
 
-This plugin allows to use of pino v7 with webpack generated bundle files.
+This plugin allows to use of pino v10 with webpack generated bundle files.
 
 Note that, due to pino architecture (based on Node.js' Worker Threads), it is not possible to make it work _without_ generating extra files.
 
@@ -24,7 +24,6 @@ This means that when using this plugin the following list of files will be gener
 
 - `thread-stream.js`
 - `pino-worker.js`
-- `pino-pipeline-worker.js`
 - `pino-file.js`
 - A file for each transport you specify in the plugin constructor's `transports` option. (see below)
 

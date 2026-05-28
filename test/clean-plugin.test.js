@@ -1,13 +1,11 @@
 'use strict'
 
-const { test } = require('tap')
-
-const { createTests } = require('./test-utils')
-
-const { PinoWebpackPlugin } = require('../src/index')
+const test = require('node:test')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const { createTests } = require('./test-utils')
+const { PinoWebpackPlugin } = require('../src/index')
 
-test('it should correctly generate all required pino files when the cache is enabled on Webpack', (t) => {
+test('it should correctly generate all required pino files when the cache is enabled on Webpack', async (t) => {
   const webpackConfig = {
     entry: {
       first: './first.js',
@@ -26,9 +24,10 @@ test('it should correctly generate all required pino files when the cache is ena
 
   t.plan(planEstimation + 2)
 
-  runBuild(() => {
-    console.log('Launch second build')
-    runBuild(() => {
+  await runBuild(async () => {
+    t.diagnostic('Launch second build')
+
+    await runBuild(async () => {
       const firstFile = testJSFileExists('first-')
       const secondFile = testJSFileExists('second-', 'abc/cde')
 
@@ -51,8 +50,8 @@ test('it should correctly generate all required pino files when the cache is ena
         testDependencyFileHasFooter(file)
       }
 
-      testEntrypointFile(firstFile, dependencies, 'This is first')
-      testEntrypointFile(secondFile, dependencies, 'This is second')
+      await testEntrypointFile(firstFile, dependencies, 'This is first')
+      await testEntrypointFile(secondFile, dependencies, 'This is second')
     })
   })
 })

@@ -1,6 +1,11 @@
+'use strict'
+
+const { mkdirSync, readdirSync, readFileSync } = require('node:fs')
+const { resolve, relative, dirname, basename, join } = require('node:path')
+const { rm } = require('node:fs/promises')
+const crypto = require('node:crypto')
+const os = require('node:os')
 const execa = require('execa')
-const { readdirSync, readFileSync } = require('fs')
-const { resolve, relative, dirname, basename, join } = require('path')
 const { webpack } = require('webpack')
 
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
@@ -21,9 +26,9 @@ const DEFAULT_WEBPACK_CONFIG = {
   }
 }
 
-function createTests(tapInstance, webpackConfig, distFolder) {
+function createTests (t, webpackConfig, distFolder) {
   // If no dist folder, use tap tempfolder
-  distFolder = distFolder ?? tapInstance.testdir()
+  distFolder = distFolder ?? testdir()
 
   // Update webpack config with distFolder
   webpackConfig.output = webpackConfig.output ?? {}
@@ -62,10 +67,12 @@ function createTests(tapInstance, webpackConfig, distFolder) {
 
     // Run webpack build, then test errors
     runBuild: function (callback) {
-      webpack({ ...DEFAULT_WEBPACK_CONFIG, ...webpackConfig }, (err, stats) => {
-        tapInstance.error(err, 'Webpack run should have no error')
-        tapInstance.notOk(stats.hasErrors(), 'Webpack compilation stats should have no error')
-        callback(err, stats)
+      return new Promise((resolve, reject) => {
+        webpack({ ...DEFAULT_WEBPACK_CONFIG, ...webpackConfig }, (err, stats) => {
+          t.assert.ifError(err, 'Webpack run should have no error')
+          t.assert.equal(stats.hasErrors(), false, 'Webpack compilation stats should have no error')
+          Promise.resolve(callback(err, stats)).then(resolve).catch(reject)
+        })
       })
     },
 
@@ -75,7 +82,7 @@ function createTests(tapInstance, webpackConfig, distFolder) {
      */
     testJSFileExists: function (pattern, subFolder) {
       const folderFiles = readdirSync(resolve(distFolder, subFolder ?? '')).filter((f) => f.startsWith(pattern))
-      tapInstance.ok(
+      t.assert.ok(
         folderFiles.length === 1,
         `/${subFolder ?? ''} has ${folderFiles.length} file${
           folderFiles.length === 1 ? 's' : ''
@@ -87,14 +94,14 @@ function createTests(tapInstance, webpackConfig, distFolder) {
     // Test if dependency file has compatibility footer
     testDependencyFileHasFooter: function (file, subFolder) {
       const filePath = subFolder ? resolve(distFolder, subFolder, file) : resolve(distFolder, file)
-      tapInstance.ok(readFileSync(filePath, 'utf8').endsWith(footer), `${file} should have compatibility footer`)
+      t.assert.ok(readFileSync(filePath, 'utf8').endsWith(footer), `${file} should have compatibility footer`)
     },
 
     // Test entry file
     testEntrypointFile: function (filePath, dependencies, expectedOutput) {
       const fileContent = readFileSync(resolve(distFolder, filePath), 'utf-8')
       // Test if the file starts with the expected banner
-      tapInstance.ok(fileContent.startsWith(banner), `${basename(filePath)} should starts with banner`)
+      t.assert.ok(fileContent.startsWith(banner), `${basename(filePath)} should starts with banner`)
       const quoteRegex = (path) => `'${path.replace(/\\/g, '\\\\\\\\')}'`
       for (const dependencyKey in dependencies) {
         // For each dependency, test if the expected file is in the __bundlerPathsOverrides object
@@ -108,16 +115,28 @@ function createTests(tapInstance, webpackConfig, distFolder) {
             )
           }\\).*?\\}`
         )
-        tapInstance.ok(fileContent.match(dependencyRegexp), `${dependencyKey} should have correct path in ${filePath}`)
+        t.assert.ok(fileContent.match(dependencyRegexp), `${dependencyKey} should have correct path in ${filePath}`)
       }
       // Test expected file output
-      execa(process.argv[0], [resolve(distFolder, filePath)]).then(({ stdout }) => {
-        tapInstance.match(stdout, expectedOutput, `${filePath} should output "${expectedOutput}"`)
+      return execa(process.argv[0], [resolve(distFolder, filePath)]).then(({ stdout }) => {
+        t.assert.match(stdout, new RegExp(expectedOutput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${filePath} should output "${expectedOutput}"`)
       })
     }
   }
 }
 
+function testdir () {
+  const parent = join(os.tmpdir(), crypto.randomBytes(16).toString('hex'))
+  mkdirSync(parent)
+  return parent
+}
+
+async function removeDir (target) {
+  return rm(target, { force: true, recursive: true })
+}
+
 module.exports = {
-  createTests
+  createTests,
+  testdir,
+  removeDir
 }
