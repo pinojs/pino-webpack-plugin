@@ -1,7 +1,7 @@
 const webpack = require('webpack')
 const CommonJsRequireDependency = require('webpack/lib/dependencies/CommonJsRequireDependency')
 const { createFsFromVolume, Volume } = require('memfs')
-const { join, dirname, relative } = require('path')
+const { join, dirname, relative, sep } = require('path')
 // const { cache } = require('webpack') // Cache handling missing
 
 const fileBanner = `/* Start of pino-webpack-plugin additions */
@@ -168,7 +168,8 @@ class PinoWebpackPlugin {
                   fileBanner,
                   '\n',
                   `globalThis.__bundlerPathsOverrides = {${dependenciesFiles.map(
-                    ([workerId, file]) => `'${workerId}': pinoWebpackAbsolutePath(${quote(join(relativePath, file))})`
+                    ([workerId, file]) =>
+                      `'${workerId}': pinoWebpackAbsolutePath(${quote(join(relativePath, file).split(sep).join('/'))})`
                   )}};`,
                   '\n',
                   '/* End of pino-webpack-plugin additions */',
