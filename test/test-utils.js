@@ -1,6 +1,6 @@
 const execa = require('execa')
 const { readdirSync, readFileSync } = require('fs')
-const { resolve, relative, dirname, basename, join } = require('path')
+const { resolve, relative, dirname, basename, join, sep } = require('path')
 const { webpack } = require('webpack')
 
 const { banner, footer, PinoWebpackPlugin } = require('../src/index')
@@ -97,16 +97,19 @@ function createTests(tapInstance, webpackConfig, distFolder) {
       tapInstance.ok(fileContent.startsWith(banner), `${basename(filePath)} should starts with banner`)
       const quoteRegex = (path) => `'${path.replace(/\\/g, '\\\\\\\\')}'`
       for (const dependencyKey in dependencies) {
+        // The generated banner always uses forward slashes so the paths stay valid on every platform
+        // (a backslash separator would be interpreted as a JS escape sequence, e.g. `\t` -> TAB).
+        const expectedPath = join(
+          relative(dirname(filePath), dirname(dependencies[dependencyKey])),
+          dependencies[dependencyKey]
+        )
+          .split(sep)
+          .join('/')
         // For each dependency, test if the expected file is in the __bundlerPathsOverrides object
         const dependencyRegexp = new RegExp(
-          `globalThis\\.__bundlerPathsOverrides = \\{.*?'${dependencyKey}': pinoWebpackAbsolutePath\\(${
-            quoteRegex(
-              join(
-                relative(dirname(filePath), dirname(dependencies[dependencyKey])),
-                dependencies[dependencyKey]
-              )
-            )
-          }\\).*?\\}`
+          `globalThis\\.__bundlerPathsOverrides = \\{.*?'${dependencyKey}': pinoWebpackAbsolutePath\\(${quoteRegex(
+            expectedPath
+          )}\\).*?\\}`
         )
         tapInstance.ok(fileContent.match(dependencyRegexp), `${dependencyKey} should have correct path in ${filePath}`)
       }
